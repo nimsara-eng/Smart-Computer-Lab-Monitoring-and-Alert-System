@@ -1,0 +1,44 @@
+Smart Computer Lab Monitoring and Alert System
+==============================================
+
+Java does NOT need to be installed. Nothing needs to be installed.
+Works on 64-bit Windows 10 and 11. Keep all files of this folder together.
+
+
+INSTRUCTOR PC (one PC)
+----------------------
+1. Double-click LabServer.exe
+2. If Windows Firewall asks, tick "Private networks" and press "Allow access".
+3. Find this PC's IP address: open Command Prompt, type  ipconfig
+   and read the "IPv4 Address" line, for example 192.168.1.10
+
+
+EVERY LAB PC
+------------
+1. Copy this whole folder to the PC (USB drive or network share).
+2. Double-click LabAgent.exe
+3. Type the instructor PC's IP address and a name for this PC
+   (PC-01, PC-02, ... every PC needs a different name), then press OK.
+
+All PCs must be on the same network (same Wi-Fi, LAN or phone hotspot).
+
+
+TRY IT ON ONE PC
+----------------
+Double-click LabServer.exe, then LabAgent.exe, and keep "localhost" as the server.
+
+
+IF A LAB PC CANNOT CONNECT
+--------------------------
+- Check the IP address and that both PCs are on the same network.
+- On the instructor PC, allow TCP port 5000 and UDP port 5001 in Windows Firewall.
+  (Command Prompt as administrator:)
+    netsh advfirewall firewall add rule name="LabMonitor TCP" dir=in action=allow protocol=TCP localport=5000
+    netsh advfirewall firewall add rule name="LabMonitor UDP" dir=in action=allow protocol=UDP localport=5001
+- If Windows shows "Windows protected your PC", press "More info" then "Run anyway".
+
+
+SETTINGS
+--------
+config\server.properties  alert limits, blocked applications, ports (restart the server after editing)
+logs\alerts.csv           every alert is saved here by the server
