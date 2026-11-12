@@ -141,6 +141,22 @@ Things to try during a demonstration:
 5. Select PC-01 and press **View processes**.
 6. Close the server and start it again -> the agents reconnect by themselves.
 
+### Messaging and help-request manual test (Group 40)
+
+**Date:** 12 November 2026
+**Environment:** One Windows PC, `demo.bat` with local simulated agents.
+**Method:** Manual GUI checks reported by a Group 40 team member (not CI tests).
+
+| Test | Procedure | Observed result | Status |
+|---|---|---|---|
+| Instructor to student | In the Instructor Dashboard, select PC-02 and use **Message selected PC**. | Message appeared in the PC-02 Agent window. | PASS |
+| Student help request | In the PC-02 Agent window, enter a help request and select **Request help**. | A help-request alert appeared in the Instructor Dashboard. | PASS |
+| Broadcast | Select **Broadcast to all** from the Instructor Dashboard. | Broadcast message reached the connected agent windows. | PASS |
+
+These results confirm the messaging workflows **in the local demo only**. They do not
+establish operation between separate physical PCs over a LAN. A real LAN test is
+still recommended before final submission or demonstration, if equipment is available.
+
 ### In a real lab
 
 On the instructor's PC:
