@@ -170,7 +170,9 @@ public class LabServer {
         if (pc == null || !pc.isConnected() || !from.equals(pc.getAddress())) {
             return;
         }
-        pc.updateHeartbeat(seq, cpu, memory, disk, uptime, config.cpuThreshold);
+        if (!pc.updateHeartbeat(seq, cpu, memory, disk, uptime, config.cpuThreshold)) {
+            return; // Ignore duplicate, delayed or invalid sequence numbers.
+        }
 
         if (pc.setCondition(Alert.Type.HEARTBEAT_LOST, false)) {
             raise(Alert.Severity.INFO, Alert.Type.HEARTBEAT_LOST, pc, "Heartbeat restored, PC is responding again");

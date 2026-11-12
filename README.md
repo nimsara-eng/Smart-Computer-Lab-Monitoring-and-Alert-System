@@ -20,7 +20,7 @@ Written in plain Java (sockets, datagrams, threads, Swing). No external librarie
 | Help requests | A student presses "Request help" and the instructor gets an alert |
 | Instructor messages | Message one PC, or broadcast to the whole lab |
 | Remote process list | Instructor can view the processes running on any PC |
-| Packet loss | Heartbeats carry a sequence number, so the server counts lost UDP datagrams per PC |
+| Packet loss | Heartbeats carry a sequence number; the server estimates missing datagrams per PC and ignores duplicate or out-of-order heartbeats |
 | Alert log | Every alert is appended to `logs/alerts.csv` |
 | Auto reconnect | Agents retry every 5 s when the server is unreachable |
 
@@ -60,6 +60,20 @@ One message per line, fields separated by `|` (see `Protocol.java`).
 | server -> agent | TCP | `MSG\|from\|text` |
 | server -> agent | TCP | `ALERT\|severity\|text` |
 | server -> agent | TCP | `GETPROCS` |
+
+## Heartbeat ordering test (single PC)
+
+This test uses plain Java, requires no network connection and checks that duplicate,
+out-of-order and negative-sequence UDP heartbeats cannot overwrite newer data.
+
+After `build.bat`, run from the project folder in PowerShell:
+
+```powershell
+javac -cp out -d out tests\labmonitor\server\PcInfoHeartbeatTest.java
+java -cp out labmonitor.server.PcInfoHeartbeatTest
+```
+
+Expected result: `Heartbeat ordering tests passed`.
 
 ## Requirements
 

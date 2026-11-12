@@ -71,22 +71,25 @@ public class PcInfo {
         return true;
     }
 
-    synchronized void updateHeartbeat(long seq, double cpu, double memory, double disk, long uptimeSec,
+    /** Accepts only newer UDP heartbeats; duplicates or delayed packets must not overwrite live metrics. */
+    synchronized boolean updateHeartbeat(long seq, double cpu, double memory, double disk, long uptimeSec,
             double cpuThreshold) {
+        if (seq < 0 || seq <= lastSeq) {
+            return false;
+        }
+        // A gap indicates missing heartbeats (some may simply be delayed).
+        if (lastSeq >= 0) {
+            lost += seq - lastSeq - 1;
+        }
+        lastSeq = seq;
         this.cpu = cpu;
         this.memory = memory;
         this.disk = disk;
         this.uptimeSec = uptimeSec;
         this.lastHeartbeat = System.currentTimeMillis();
         this.received++;
-        // UDP gives no delivery guarantee: a gap in the sequence numbers means datagrams were lost.
-        if (seq > lastSeq) {
-            if (lastSeq >= 0) {
-                lost += seq - lastSeq - 1;
-            }
-            lastSeq = seq;
-        }
         cpuHighCount = cpu >= cpuThreshold ? cpuHighCount + 1 : 0;
+        return true;
     }
 
     /** Switches a problem on or off. Returns true only when the state actually changed. */
