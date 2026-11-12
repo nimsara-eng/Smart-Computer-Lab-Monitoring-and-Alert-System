@@ -28,6 +28,11 @@ public class ServerConfig {
     public int cpuConsecutive = 3;
     public double memoryThreshold = 90;
     public double diskThreshold = 90;
+    /** Lower limits prevent alerts from flickering near the warning threshold. */
+    public double cpuRecoveryThreshold = 80;
+    public double memoryRecoveryThreshold = 85;
+    public double diskRecoveryThreshold = 85;
+    public int recoveryConsecutive = 3;
 
     /** Applications that are not allowed in the lab. Stored in lower case without ".exe". */
     public final List<String> blockedApps = new ArrayList<String>();
@@ -61,6 +66,10 @@ public class ServerConfig {
         c.cpuConsecutive = Math.max(1, intValue(p, "cpu.consecutive", c.cpuConsecutive));
         c.memoryThreshold = intValue(p, "memory.threshold", (int) c.memoryThreshold);
         c.diskThreshold = intValue(p, "disk.threshold", (int) c.diskThreshold);
+        c.cpuRecoveryThreshold = recoveryValue(p, "cpu.recovery.threshold", c.cpuThreshold);
+        c.memoryRecoveryThreshold = recoveryValue(p, "memory.recovery.threshold", c.memoryThreshold);
+        c.diskRecoveryThreshold = recoveryValue(p, "disk.recovery.threshold", c.diskThreshold);
+        c.recoveryConsecutive = Math.max(1, intValue(p, "alert.recovery.consecutive", c.recoveryConsecutive));
         c.logFile = p.getProperty("log.file", c.logFile).trim();
         if (p.getProperty("blocked.apps") != null) {
             c.setBlockedApps(p.getProperty("blocked.apps"));
@@ -86,6 +95,16 @@ public class ServerConfig {
     private static String normalize(String name) {
         String n = name.trim().toLowerCase();
         return n.endsWith(".exe") ? n.substring(0, n.length() - 4) : n;
+    }
+
+    private static double recoveryValue(Properties p, String key, double warningThreshold) {
+        double fallback = Math.max(0, warningThreshold - 5);
+        int candidate = intValue(p, key, (int) fallback);
+        if (candidate < 0 || candidate >= warningThreshold) {
+            System.err.println("Invalid recovery threshold for " + key + "; using " + fallback);
+            return fallback;
+        }
+        return candidate;
     }
 
     private static int intValue(Properties p, String key, int fallback) {

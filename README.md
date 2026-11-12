@@ -75,6 +75,24 @@ java -cp out labmonitor.server.PcInfoHeartbeatTest
 
 Expected result: `Heartbeat ordering tests passed`.
 
+## Stable resource alerts (single PC)
+
+CPU warnings start after `cpu.consecutive` high readings, whereas memory and disk
+warnings start after one high reading. All three warnings recover only after
+`alert.recovery.consecutive` readings at or below the lower recovery thresholds.
+This hysteresis prevents rapid WARNING / INFO toggling near a limit. Configure
+limits in `config/server.properties` (`cpu.recovery.threshold`,
+`memory.recovery.threshold`, `disk.recovery.threshold`).
+
+After `build.bat`, run the alert stability regression test:
+
+```powershell
+javac -cp out -d out tests\labmonitor\server\AlertStabilityTest.java
+java -cp out labmonitor.server.AlertStabilityTest
+```
+
+Expected result: `Alert stability tests passed`.
+
 ## Requirements
 
 A JDK (version 8 or newer) with `javac` and `java` on the PATH. Scripts are for Windows.
