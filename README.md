@@ -93,6 +93,24 @@ java -cp out labmonitor.server.AlertStabilityTest
 
 Expected result: `Alert stability tests passed`.
 
+## Disconnect/reconnect integration test (single PC)
+
+This end-to-end test starts a real localhost TCP server and simulated Java agent,
+waits for a UDP heartbeat, stops the server, verifies the PC goes OFFLINE,
+then restarts the server and checks that the same agent reconnects automatically.
+No second computer or external testing library is required.
+
+Close any running demo first and, after `build.bat`, run from the project folder:
+
+```powershell
+javac -cp out -d out tests\labmonitor\server\DisconnectReconnectTest.java
+java -cp out labmonitor.server.DisconnectReconnectTest
+```
+
+Expected result: `Disconnect/reconnect integration test passed`.
+The agent retries every 5 seconds, so the test may take a few seconds.
+If the test fails, do not commit; share its error output for investigation.
+
 ## Requirements
 
 A JDK (version 8 or newer) with `javac` and `java` on the PATH. Scripts are for Windows.
