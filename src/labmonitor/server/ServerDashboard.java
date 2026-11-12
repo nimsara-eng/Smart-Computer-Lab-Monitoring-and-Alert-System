@@ -123,6 +123,13 @@ public class ServerDashboard extends JFrame implements ServerListener {
             }
         }));
 
+        buttons.add(button("View Alert History", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new AlertHistoryDialog(ServerDashboard.this, ServerDashboard.this.server).setVisible(true);
+            }
+        }));
+
         setLayout(new BorderLayout());
         add(summary, BorderLayout.NORTH);
         add(split, BorderLayout.CENTER);
