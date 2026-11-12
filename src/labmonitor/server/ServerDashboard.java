@@ -45,8 +45,8 @@ public class ServerDashboard extends JFrame implements ServerListener {
     private static final int MAX_ALERT_ROWS = 500;
 
     private final LabServer server;
-    private final PcTableModel pcModel = new PcTableModel();
-    private final JTable pcTable = new JTable(pcModel);
+    private final PcTableModel pcModel;
+    private final JTable pcTable = new JTable();
     private final DefaultTableModel alertModel = new DefaultTableModel(
             new Object[] { "Time", "Severity", "PC", "Type", "Message" }, 0) {
         private static final long serialVersionUID = 1L;
@@ -77,6 +77,8 @@ public class ServerDashboard extends JFrame implements ServerListener {
     private ServerDashboard(LabServer server) {
         super("Smart Computer Lab Monitoring and Alert System - Instructor Dashboard");
         this.server = server;
+        this.pcModel = new PcTableModel(server.getConfig());
+        this.pcTable.setModel(pcModel);
 
         pcTable.setRowHeight(24);
         pcTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -216,9 +218,16 @@ public class ServerDashboard extends JFrame implements ServerListener {
     private void updateSummary() {
         int online = 0;
         int problems = 0;
+        int healthy = 0;
+        int warning = 0;
+        int critical = 0;
         List<PcInfo> pcs = server.getPcs();
         for (PcInfo pc : pcs) {
             PcInfo.Status s = pc.getStatus();
+            PcHealth.Level health = PcHealth.evaluate(pc, server.getConfig());
+            if (health == PcHealth.Level.HEALTHY) healthy++;
+            if (health == PcHealth.Level.WARNING) warning++;
+            if (health == PcHealth.Level.CRITICAL) critical++;
             if (s != PcInfo.Status.OFFLINE) {
                 online++;
             }
@@ -227,6 +236,7 @@ public class ServerDashboard extends JFrame implements ServerListener {
             }
         }
         summary.setText("Connected: " + online + " of " + pcs.size() + " known PCs      PCs with problems: " + problems
+                + "      Health: " + healthy + " healthy / " + warning + " warning / " + critical + " critical"
                 + "      Listening on TCP " + server.getConfig().tcpPort + " / UDP " + server.getConfig().udpPort);
     }
 
@@ -289,9 +299,14 @@ public class ServerDashboard extends JFrame implements ServerListener {
     private static class PcTableModel extends AbstractTableModel {
         private static final long serialVersionUID = 1L;
         private static final String[] COLUMNS = { "PC ID", "Host name", "User", "IP address", "Status", "CPU %",
-                "RAM %", "Disk %", "Last heartbeat", "Lost packets", "Problems" };
+                "RAM %", "Disk %", "Health", "Last heartbeat", "Lost packets", "Problems" };
 
         private final List<PcInfo> rows = new ArrayList<PcInfo>();
+        private final ServerConfig config;
+
+        PcTableModel(ServerConfig config) {
+            this.config = config;
+        }
 
         void upsert(PcInfo pc) {
             int index = rows.indexOf(pc);
@@ -350,11 +365,13 @@ public class ServerDashboard extends JFrame implements ServerListener {
             case 7:
                 return live ? percent(pc.getDisk()) : "-";
             case 8:
+                return PcHealth.evaluate(pc, config).toString();
+            case 9:
                 if (!pc.isConnected()) {
                     return "-";
                 }
                 return (System.currentTimeMillis() - pc.getLastHeartbeat()) / 1000 + " s ago";
-            case 9:
+            case 10:
                 return pc.getLost() + " of " + (pc.getLost() + pc.getReceived());
             default:
                 return pc.getProblems();
@@ -375,14 +392,15 @@ public class ServerDashboard extends JFrame implements ServerListener {
                 int row, int column) {
             Component c = super.getTableCellRendererComponent(table, value, selected, focus, row, column);
             if (!selected) {
-                switch (pcModel.get(row).getStatus()) {
-                case ONLINE:
+                PcHealth.Level health = PcHealth.evaluate(pcModel.get(row), server.getConfig());
+                switch (health) {
+                case HEALTHY:
                     c.setBackground(GREEN);
                     break;
-                case ALERT:
+                case WARNING:
                     c.setBackground(ORANGE);
                     break;
-                case NOT_RESPONDING:
+                case CRITICAL:
                     c.setBackground(RED);
                     break;
                 default:
