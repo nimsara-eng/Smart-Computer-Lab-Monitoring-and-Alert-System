@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -40,6 +41,8 @@ public class PcInfo {
     private final Set<String> blockedRunning = new TreeSet<String>();
     /** Problems that are active right now, so each one is reported once and not on every heartbeat. */
     private final EnumSet<Alert.Type> conditions = EnumSet.noneOf(Alert.Type.class);
+    private final EnumMap<Alert.Type, Integer> warningSamples = new EnumMap<Alert.Type, Integer>(Alert.Type.class);
+    private final EnumMap<Alert.Type, Integer> recoverySamples = new EnumMap<Alert.Type, Integer>(Alert.Type.class);
 
     public PcInfo(String pcId) {
         this.pcId = pcId;
@@ -58,6 +61,8 @@ public class PcInfo {
         this.cpuHighCount = 0;
         this.blockedRunning.clear();
         this.conditions.clear();
+        this.warningSamples.clear();
+        this.recoverySamples.clear();
     }
 
     /** Returns false if this handler was already replaced by a newer connection. */
@@ -68,6 +73,8 @@ public class PcInfo {
         handler = null;
         conditions.clear();
         blockedRunning.clear();
+        warningSamples.clear();
+        recoverySamples.clear();
         return true;
     }
 
@@ -90,6 +97,43 @@ public class PcInfo {
         this.received++;
         cpuHighCount = cpu >= cpuThreshold ? cpuHighCount + 1 : 0;
         return true;
+    }
+
+    /**
+     * Samples a resource's usage with hysteresis. Returns +1 when the warning
+     * begins, -1 when it has recovered, or 0 for no change. Warning and
+     * recovery streaks are deliberately independent for each resource.
+     */
+    synchronized int updateMetricCondition(Alert.Type type, double value, double warningAt,
+            double recoveredAt, int warningAfter, int recoveredAfter) {
+        if (Double.isNaN(value) || Double.isInfinite(value) || value < 0 || value > 100) {
+            return 0;
+        }
+        if (!conditions.contains(type)) {
+            recoverySamples.remove(type);
+            int count = value >= warningAt ? getCount(warningSamples, type) + 1 : 0;
+            if (count >= warningAfter) {
+                warningSamples.remove(type);
+                conditions.add(type);
+                return 1;
+            }
+            warningSamples.put(type, count);
+        } else {
+            warningSamples.remove(type);
+            int count = value <= recoveredAt ? getCount(recoverySamples, type) + 1 : 0;
+            if (count >= recoveredAfter) {
+                recoverySamples.remove(type);
+                conditions.remove(type);
+                return -1;
+            }
+            recoverySamples.put(type, count);
+        }
+        return 0;
+    }
+
+    private static int getCount(EnumMap<Alert.Type, Integer> counts, Alert.Type type) {
+        Integer current = counts.get(type);
+        return current == null ? 0 : current;
     }
 
     /** Switches a problem on or off. Returns true only when the state actually changed. */

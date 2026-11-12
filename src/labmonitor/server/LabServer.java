@@ -178,21 +178,19 @@ public class LabServer {
             raise(Alert.Severity.INFO, Alert.Type.HEARTBEAT_LOST, pc, "Heartbeat restored, PC is responding again");
         }
 
-        // CPU must stay high for several heartbeats, so a short spike does not raise an alert.
-        if (pc.getCpuHighCount() >= config.cpuConsecutive) {
-            setCondition(pc, Alert.Type.HIGH_CPU, true, Alert.Severity.WARNING,
-                    String.format(Locale.US, "CPU usage is %.0f%% (limit %.0f%%)", cpu, config.cpuThreshold));
-        } else if (pc.getCpuHighCount() == 0) {
-            setCondition(pc, Alert.Type.HIGH_CPU, false, null, "CPU usage is back to normal");
-        }
-        setCondition(pc, Alert.Type.HIGH_MEMORY, memory >= config.memoryThreshold, Alert.Severity.WARNING,
-                memory >= config.memoryThreshold
-                        ? String.format(Locale.US, "Memory usage is %.0f%% (limit %.0f%%)", memory, config.memoryThreshold)
-                        : "Memory usage is back to normal");
-        setCondition(pc, Alert.Type.DISK_FULL, disk >= config.diskThreshold, Alert.Severity.WARNING,
-                disk >= config.diskThreshold
-                        ? String.format(Locale.US, "Disk is %.0f%% full (limit %.0f%%)", disk, config.diskThreshold)
-                        : "Disk usage is back to normal");
+        // Hysteresis and several recovery samples prevent repeated warning/clear cycles.
+        updateMetricAlert(pc, Alert.Type.HIGH_CPU, cpu, config.cpuThreshold,
+                config.cpuRecoveryThreshold, config.cpuConsecutive,
+                String.format(Locale.US, "CPU usage is %.0f%% (limit %.0f%%)", cpu, config.cpuThreshold),
+                "CPU usage is back to normal");
+        updateMetricAlert(pc, Alert.Type.HIGH_MEMORY, memory, config.memoryThreshold,
+                config.memoryRecoveryThreshold, 1,
+                String.format(Locale.US, "Memory usage is %.0f%% (limit %.0f%%)", memory, config.memoryThreshold),
+                "Memory usage is back to normal");
+        updateMetricAlert(pc, Alert.Type.DISK_FULL, disk, config.diskThreshold,
+                config.diskRecoveryThreshold, 1,
+                String.format(Locale.US, "Disk is %.0f%% full (limit %.0f%%)", disk, config.diskThreshold),
+                "Disk usage is back to normal");
 
         firePcUpdated(pc);
     }
@@ -271,16 +269,17 @@ public class LabServer {
 
     // ------------------------------------------------------------------
 
-    /** Raises an alert when a problem starts and an INFO entry when it ends. */
-    private void setCondition(PcInfo pc, Alert.Type type, boolean active, Alert.Severity severity, String message) {
-        if (!pc.setCondition(type, active)) {
-            return;
-        }
-        if (active) {
-            raise(severity, type, pc, message);
-            pc.send(Protocol.build(Protocol.ALERT, severity, message));
-        } else {
-            raise(Alert.Severity.INFO, type, pc, message);
+    /** Only emit a resource alert when its stabilized state actually changes. */
+    private void updateMetricAlert(PcInfo pc, Alert.Type type, double value,
+            double threshold, double recoveryThreshold, int warningConsecutive,
+            String warningMessage, String recoveryMessage) {
+        int transition = pc.updateMetricCondition(type, value, threshold, recoveryThreshold,
+                warningConsecutive, config.recoveryConsecutive);
+        if (transition == 1) {
+            raise(Alert.Severity.WARNING, type, pc, warningMessage);
+            pc.send(Protocol.build(Protocol.ALERT, Alert.Severity.WARNING, warningMessage));
+        } else if (transition == -1) {
+            raise(Alert.Severity.INFO, type, pc, recoveryMessage);
         }
     }
 
