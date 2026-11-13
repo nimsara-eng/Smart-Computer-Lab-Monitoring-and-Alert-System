@@ -44,9 +44,9 @@ public class HeartbeatListener implements Runnable {
 
     private static double percent(String field) {
         double v = Double.parseDouble(field);
-        if (Double.isNaN(v)) {
+        if (Double.isNaN(v) || Double.isInfinite(v) || v < 0 || v > 100) {
             throw new NumberFormatException(field);
         }
-        return Math.max(0, Math.min(100, v));
+        return v;
     }
 }

@@ -47,7 +47,10 @@ public class LabAgent {
     public LabAgent(String host, int port, String pcId, String user, SystemMetrics metrics) {
         this.host = host;
         this.port = port;
-        this.pcId = pcId;
+        this.pcId = Protocol.clean(pcId).trim();
+        if (this.pcId.isEmpty()) {
+            throw new IllegalArgumentException("PC id must not be empty");
+        }
         this.user = user;
         this.metrics = metrics;
     }
@@ -99,6 +102,7 @@ public class LabAgent {
         try {
             s.connect(new InetSocketAddress(serverAddress, port), CONNECT_TIMEOUT_MS);
             socket = s;
+            s.setSoTimeout(CONNECT_TIMEOUT_MS);
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
             synchronized (sendLock) {
                 out = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), "UTF-8"), true);
@@ -123,11 +127,15 @@ public class LabAgent {
             final int processSec;
             try {
                 udpPort = Integer.parseInt(f[1]);
+                if (udpPort < 1 || udpPort > 65535) {
+                    throw new NumberFormatException("invalid UDP port");
+                }
                 heartbeatSec = Math.max(1, Integer.parseInt(f[2]));
                 processSec = Math.max(1, Integer.parseInt(f[3]));
             } catch (NumberFormatException e) {
                 throw new IOException("unexpected reply from server: " + reply);
             }
+            s.setSoTimeout(0);
             listener.statusChanged(true, "Connected to " + host + ":" + port + " as " + pcId);
 
             Thread heartbeat = new Thread(new Runnable() {
@@ -287,6 +295,10 @@ public class LabAgent {
                 } else {
                     throw new IllegalArgumentException(args[i]);
                 }
+            }
+            if (port < 1 || port > 65535 || (pcId != null && Protocol.clean(pcId).trim().isEmpty())
+                    || Double.isNaN(simCpu) || Double.isInfinite(simCpu) || simCpu > 100) {
+                throw new IllegalArgumentException("Invalid port, PC id or simulated CPU percentage");
             }
         } catch (RuntimeException e) {
             System.err.println("Usage: LabAgent [--server host] [--port n] [--id PC-01] [--user name] [--nogui]\n"

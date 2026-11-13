@@ -30,6 +30,7 @@ public class LabServer {
     private final AlertManager alertManager;
     private final Map<String, PcInfo> pcs = new ConcurrentHashMap<String, PcInfo>();
     private final List<ServerListener> listeners = new CopyOnWriteArrayList<ServerListener>();
+    private final List<ClientHandler> clients = new CopyOnWriteArrayList<ClientHandler>();
 
     private ServerSocket serverSocket;
     private DatagramSocket udpSocket;
@@ -69,7 +70,14 @@ public class LabServer {
         while (running) {
             try {
                 Socket client = serverSocket.accept();
-                new ClientHandler(this, client).start();
+                ClientHandler handler = new ClientHandler(this, client);
+                clients.add(handler);
+                if (running) {
+                    handler.start();
+                } else {
+                    handler.close();
+                    clients.remove(handler);
+                }
             } catch (IOException e) {
                 if (running) {
                     System.err.println("Accept failed: " + e.getMessage());
@@ -81,14 +89,18 @@ public class LabServer {
     public void stop() {
         running = false;
         try {
-            serverSocket.close();
+            if (serverSocket != null) serverSocket.close();
         } catch (IOException ignored) {
             // closing anyway
         }
-        udpSocket.close();
-        for (PcInfo pc : pcs.values()) {
-            pc.closeConnection();
+        if (udpSocket != null) udpSocket.close();
+        for (ClientHandler client : clients) {
+            client.close();
         }
+    }
+
+    void onClientClosed(ClientHandler client) {
+        clients.remove(client);
     }
 
     public boolean isRunning() {
@@ -328,6 +340,10 @@ public class LabServer {
                 } else {
                     throw new IllegalArgumentException(args[i]);
                 }
+            }
+            if ((tcp != null && (tcp < 1 || tcp > 65535))
+                    || (udp != null && (udp < 1 || udp > 65535))) {
+                throw new IllegalArgumentException("Port must be between 1 and 65535");
             }
         } catch (RuntimeException e) {
             System.err.println("Usage: LabServer [--nogui] [--config file] [--tcp port] [--udp port]");

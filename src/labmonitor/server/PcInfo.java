@@ -81,7 +81,7 @@ public class PcInfo {
     /** Accepts only newer UDP heartbeats; duplicates or delayed packets must not overwrite live metrics. */
     synchronized boolean updateHeartbeat(long seq, double cpu, double memory, double disk, long uptimeSec,
             double cpuThreshold) {
-        if (seq < 0 || seq <= lastSeq) {
+        if (seq < 0 || seq <= lastSeq || uptimeSec < 0) {
             return false;
         }
         // A gap indicates missing heartbeats (some may simply be delayed).

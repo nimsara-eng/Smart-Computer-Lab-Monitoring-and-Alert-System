@@ -80,6 +80,7 @@ public class ClientHandler extends Thread {
                 server.onDisconnect(pc, this, graceful);
             }
             close();
+            server.onClientClosed(this);
         }
     }
 

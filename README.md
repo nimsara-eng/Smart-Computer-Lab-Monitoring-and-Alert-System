@@ -61,6 +61,14 @@ One message per line, fields separated by `|` (see `Protocol.java`).
 | server -> agent | TCP | `ALERT\|severity\|text` |
 | server -> agent | TCP | `GETPROCS` |
 
+## Full QA suite
+
+Run `test.bat` from the project folder on Windows. It builds the app and runs all
+seven test suites, including real localhost TCP/UDP exchanges and a Swing smoke
+test that briefly opens the windows. No external test libraries are required.
+Allow about 30 seconds. See [QA-REPORT.md](QA-REPORT.md) for coverage, fixes, Linux
+commands, and checks that still require Windows or physical lab PCs.
+
 ## Heartbeat ordering test (single PC)
 
 This test uses plain Java, requires no network connection and checks that duplicate,

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 import labmonitor.common.Protocol;
@@ -56,16 +57,16 @@ public class ServerConfig {
             System.err.println("Could not read " + path + ", using defaults: " + e.getMessage());
             return c;
         }
-        c.tcpPort = intValue(p, "tcp.port", c.tcpPort);
-        c.udpPort = intValue(p, "udp.port", c.udpPort);
+        c.tcpPort = boundedValue(p, "tcp.port", c.tcpPort, 1, 65535);
+        c.udpPort = boundedValue(p, "udp.port", c.udpPort, 1, 65535);
         c.heartbeatIntervalSec = Math.max(1, intValue(p, "heartbeat.interval.sec", c.heartbeatIntervalSec));
         c.heartbeatTimeoutSec = Math.max(c.heartbeatIntervalSec + 1,
                 intValue(p, "heartbeat.timeout.sec", c.heartbeatTimeoutSec));
         c.processReportSec = Math.max(1, intValue(p, "process.report.sec", c.processReportSec));
-        c.cpuThreshold = intValue(p, "cpu.threshold", (int) c.cpuThreshold);
+        c.cpuThreshold = boundedValue(p, "cpu.threshold", (int) c.cpuThreshold, 1, 100);
         c.cpuConsecutive = Math.max(1, intValue(p, "cpu.consecutive", c.cpuConsecutive));
-        c.memoryThreshold = intValue(p, "memory.threshold", (int) c.memoryThreshold);
-        c.diskThreshold = intValue(p, "disk.threshold", (int) c.diskThreshold);
+        c.memoryThreshold = boundedValue(p, "memory.threshold", (int) c.memoryThreshold, 1, 100);
+        c.diskThreshold = boundedValue(p, "disk.threshold", (int) c.diskThreshold, 1, 100);
         c.cpuRecoveryThreshold = recoveryValue(p, "cpu.recovery.threshold", c.cpuThreshold);
         c.memoryRecoveryThreshold = recoveryValue(p, "memory.recovery.threshold", c.memoryThreshold);
         c.diskRecoveryThreshold = recoveryValue(p, "disk.recovery.threshold", c.diskThreshold);
@@ -93,7 +94,7 @@ public class ServerConfig {
 
     /** "VLC.exe" and "vlc" are treated as the same application. */
     private static String normalize(String name) {
-        String n = name.trim().toLowerCase();
+        String n = name.trim().toLowerCase(Locale.ROOT);
         return n.endsWith(".exe") ? n.substring(0, n.length() - 4) : n;
     }
 
@@ -118,5 +119,14 @@ public class ServerConfig {
             System.err.println("Ignoring invalid value for " + key + ": " + v);
             return fallback;
         }
+    }
+
+    private static int boundedValue(Properties p, String key, int fallback, int min, int max) {
+        int value = intValue(p, key, fallback);
+        if (value < min || value > max) {
+            System.err.println("Ignoring out-of-range value for " + key + ": " + value);
+            return fallback;
+        }
+        return value;
     }
 }
