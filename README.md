@@ -64,9 +64,10 @@ One message per line, fields separated by `|` (see `Protocol.java`).
 ## Full QA suite
 
 Run `test.bat` from the project folder on Windows. It builds the app and runs all
-seven test suites, including real localhost TCP/UDP exchanges and a Swing smoke
-test that briefly opens the windows. No external test libraries are required.
-Allow about 30 seconds. See [QA-REPORT.md](QA-REPORT.md) for coverage, fixes, Linux
+ten test suites, including real localhost TCP/UDP exchanges, alert logging, and
+Swing button/dialog/keyboard and window-close tests. No external test libraries
+are required. Use `test.bat --load` to add a 40-agent, one-minute load test.
+Allow about a minute for the standard suites. See [QA-REPORT.md](QA-REPORT.md) for coverage, fixes, Linux
 commands, and checks that still require Windows or physical lab PCs.
 
 ## Heartbeat ordering test (single PC)

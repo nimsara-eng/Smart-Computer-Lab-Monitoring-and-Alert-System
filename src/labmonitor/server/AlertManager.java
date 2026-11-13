@@ -45,6 +45,9 @@ public class AlertManager {
                     w.println("time,severity,type,pc,message");
                 }
                 w.println(a.timeText() + "," + a.severity + "," + a.type + "," + csv(a.pcId) + "," + csv(a.message));
+                if (w.checkError()) {
+                    throw new IOException("write failed for " + logFile);
+                }
             }
         } catch (IOException e) {
             System.err.println("Could not write alert log: " + e.getMessage());
