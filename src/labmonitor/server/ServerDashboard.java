@@ -13,6 +13,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Locale;
 
 import javax.swing.BorderFactory;
@@ -45,6 +47,7 @@ public class ServerDashboard extends JFrame implements ServerListener {
     private static final int MAX_ALERT_ROWS = 500;
 
     private final LabServer server;
+    private final Map<String, PerformanceHistory> performanceHistories = new HashMap<String, PerformanceHistory>();
     private final PcTableModel pcModel;
     private final JTable pcTable = new JTable();
     private final DefaultTableModel alertModel = new DefaultTableModel(
@@ -123,6 +126,13 @@ public class ServerDashboard extends JFrame implements ServerListener {
             }
         }));
 
+        buttons.add(button("Live Performance Graph", new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showPerformanceGraph();
+            }
+        }));
+
         buttons.add(button("View Alert History", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -150,6 +160,7 @@ public class ServerDashboard extends JFrame implements ServerListener {
         // Show anything that happened before the window opened, then listen for new events.
         for (PcInfo pc : server.getPcs()) {
             pcModel.upsert(pc);
+            recordPerformance(pc);
         }
         for (Alert a : server.getAlertHistory()) {
             addAlertRow(a);
@@ -183,6 +194,7 @@ public class ServerDashboard extends JFrame implements ServerListener {
             @Override
             public void run() {
                 pcModel.upsert(pc);
+                recordPerformance(pc);
             }
         });
     }
@@ -254,6 +266,27 @@ public class ServerDashboard extends JFrame implements ServerListener {
             return null;
         }
         return pcModel.get(row);
+    }
+
+    private void recordPerformance(PcInfo pc) {
+        if (!pc.isConnected() || pc.getReceived() <= 0) return;
+        PerformanceHistory history = performanceHistories.get(pc.getPcId());
+        if (history == null) {
+            history = new PerformanceHistory();
+            performanceHistories.put(pc.getPcId(), history);
+        }
+        history.add(pc.getReceived(), pc.getCpu(), pc.getMemory(), pc.getDisk());
+    }
+
+    private void showPerformanceGraph() {
+        PcInfo pc = selectedPc();
+        if (pc == null) return;
+        PerformanceHistory history = performanceHistories.get(pc.getPcId());
+        if (history == null) {
+            history = new PerformanceHistory();
+            performanceHistories.put(pc.getPcId(), history);
+        }
+        new PerformanceGraphDialog(this, pc.getPcId(), history).setVisible(true);
     }
 
     private void messageSelected() {
