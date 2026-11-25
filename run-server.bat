@@ -1,5 +1,4 @@
 @echo off
-rem Starts the instructor dashboard. Add --nogui for the text mode server.
+rem Starts the instructor dashboard (run build.bat first).
 cd /d "%~dp0"
-if not exist out\labmonitor\server\LabServer.class call "%~dp0build.bat" || exit /b 1
-java -cp out labmonitor.server.LabServer %*
+java -cp out labmonitor.LabServer

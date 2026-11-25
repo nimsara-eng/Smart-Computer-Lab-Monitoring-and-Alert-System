@@ -1,14 +1,10 @@
 @echo off
-rem One-machine demo: the dashboard plus four lab PCs.
-rem   PC-01  this real computer (real CPU, memory, disk and process list)
-rem   PC-02  simulated, normal behaviour
-rem   PC-03  simulated, CPU stuck at 96 percent      -> HIGH_CPU alert
-rem   PC-04  simulated, running a blocked application -> BLOCKED_APP alert
+rem Demo on one PC: the server, one real agent and one SIMULATED high-CPU agent.
 cd /d "%~dp0"
 call "%~dp0build.bat" || exit /b 1
-start "Lab Server" java -cp out labmonitor.server.LabServer
-timeout /t 2 /nobreak >nul
-start "PC-01" javaw -cp out labmonitor.client.LabAgent --server localhost --id PC-01
-start "PC-02" javaw -cp out labmonitor.client.LabAgent --server localhost --id PC-02 --user Kasun --simulate
-start "PC-03" javaw -cp out labmonitor.client.LabAgent --server localhost --id PC-03 --user Nimali --sim-cpu 96
-start "PC-04" javaw -cp out labmonitor.client.LabAgent --server localhost --id PC-04 --user Sahan --simulate --fake-proc vlc.exe
+start "Lab Server" java -cp out labmonitor.LabServer
+rem wait about 3 seconds so the server is ready before the agents connect
+ping -n 4 127.0.0.1 >nul
+start "PC-01 real" javaw -cp out labmonitor.LabAgent localhost PC-01
+start "PC-02 simulated" javaw -cp out labmonitor.LabAgent localhost PC-02 --simulate
+echo Demo started. Close the windows to stop.

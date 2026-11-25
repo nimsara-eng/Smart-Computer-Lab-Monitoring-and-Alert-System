@@ -36,9 +36,3 @@ IF A LAB PC CANNOT CONNECT
     netsh advfirewall firewall add rule name="LabMonitor TCP" dir=in action=allow protocol=TCP localport=5000
     netsh advfirewall firewall add rule name="LabMonitor UDP" dir=in action=allow protocol=UDP localport=5001
 - If Windows shows "Windows protected your PC", press "More info" then "Run anyway".
-
-
-SETTINGS
---------
-config\server.properties  alert limits, blocked applications, ports (restart the server after editing)
-logs\alerts.csv           every alert is saved here by the server

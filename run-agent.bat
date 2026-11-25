@@ -1,6 +1,7 @@
 @echo off
-rem Starts the agent on a lab PC.
-rem   run-agent.bat --server 192.168.1.10 --id PC-01
+rem Starts a student agent (run build.bat first).
+rem   run-agent.bat                        asks for the server IP and PC ID
+rem   run-agent.bat 192.168.1.10 PC-05     connects to that server
+rem   run-agent.bat localhost PC-09 --simulate   fake high-CPU data for demos
 cd /d "%~dp0"
-if not exist out\labmonitor\client\LabAgent.class call "%~dp0build.bat" || exit /b 1
-java -cp out labmonitor.client.LabAgent %*
+java -cp out labmonitor.LabAgent %*

@@ -1,4 +1,4 @@
 out/
 logs/
-build/
-dist/
+/build/
+/dist/
